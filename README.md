@@ -2,7 +2,9 @@
 
 ## Group 8
 Ryan Baker, 101072478
+
 Mitansh Desai, 101168117
+
 Adam Prins, 100879683
 
 ## Introduction
