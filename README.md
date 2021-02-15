@@ -29,8 +29,11 @@ Some challenges we might face would include striking a balance between escalatin
 ![Gantt Chart](/docs/GanttChart.png)
 
 ## References
-Townsend, K. (2020, November 26). Weakest Link In Security. Retrieved February 01, 2021,
-from https://blog.avast.com/weakest-link-in-security-avast
-Wang, C., K., S. T., Hu, H., Bossart, D., & Wang, G. (2018, March). The Next Domino To Fall: Empirical Analysis of User Passwords across Online Services. Retrieved February 01, 2021, from https://people.cs.vt.edu/gangwang/pass
-Chernev, B. (2021). What Is AES - The World's Most Popular Encryption Method. TechJury. Retrieved 1 February 2021, from https://techjury.net/blog/what-is-aes/
-G., D. (2021). The Ultimate List of Best VPN Services for 2021 [Honest Reviews]. TechJury. Retrieved 1 February 2021, from https://techjury.net/best/vpn-services/
+
+* Townsend, K. (2020, November 26). Weakest Link In Security. Retrieved February 01, 2021, from https://blog.avast.com/weakest-link-in-security-avast
+
+* Wang, C., K., S. T., Hu, H., Bossart, D., & Wang, G. (2018, March). The Next Domino To Fall: Empirical Analysis of User Passwords across Online Services. Retrieved February 01, 2021, from https://people.cs.vt.edu/gangwang/pass
+
+* Chernev, B. (2021). What Is AES - The World's Most Popular Encryption Method. TechJury. Retrieved 1 February 2021, from https://techjury.net/blog/what-is-aes/
+
+* G., D. (2021). The Ultimate List of Best VPN Services for 2021 [Honest Reviews]. TechJury. Retrieved 1 February 2021, from https://techjury.net/best/vpn-services/
