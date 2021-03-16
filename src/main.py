@@ -37,9 +37,18 @@ def getEntryFromInfo(info):
 
 if __name__ == "__main__":
 
+
+    ui = View()
+
+    ui.masterkey_popup()
+
     root = Tk()
     root.resizable(width=0, height=0)
     root.title('Password Manager')
-    ui = View(root)
 
-    mainloop()
+    ui.main_popup(root)
+
+    try:
+        mainloop()
+    except:
+        pass

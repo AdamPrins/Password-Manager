@@ -3,11 +3,16 @@ from tkinter import ttk
 from tkinter import messagebox
 import json
 import encryption
+import passwordAnalysis
+import time
 
 
 class View:
-    def __init__(self, root):
+    def __init__(self):
+        pass
 
+
+    def main_popup(self, root):
         self.root = root
 
         self.tree = ttk.Treeview(self.root, selectmode='browse')
@@ -69,15 +74,37 @@ class View:
         self.editText5 = None
         self.editText6 = None
 
-
-        self.masterkey = "tempkey"
-
         arr = self.getAll()
 
-        for i in range(len(arr)):
-            self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey)))
+        try:
+            for i in range(len(arr)):
+                self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey)))
+        except:
+            messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
+            self.force_close()
 
 
+    def setmaster(self, event=None):
+        self.masterkey = self.passwordText1.get("1.0", END).strip("\n")
+        self.firstPopup.destroy()
+
+    def masterkey_popup(self):
+        popup = Tk()
+        popup.wm_title("Enter Master Password")
+        popup.bind('<Return>', self.setmaster)
+
+        self.firstPopup = popup;
+
+        label1 = ttk.Label(popup, text="Password").grid(row=0, column=0, padx=10, pady=10)
+        self.passwordText1 = Text(popup, height=1)
+        self.passwordText1.grid(row=0, column=1, padx=10, pady=10)
+
+
+        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.setmaster()]).grid(row=1, column=2)
+
+        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=1, column=3)
+
+        popup.mainloop()
 
     def insert_item(self):
 
@@ -124,6 +151,7 @@ class View:
 
         # TODO hook this self.donothing call up to the password generation function and set it to update the appropriate textboxes
         button1 = ttk.Button(popup, text="Generate Password", command = self.donothing).grid(row=2, column=2)
+        button2 = ttk.Button(popup, text="Generate Memorable Password", command = self.donothing).grid(row=3, column=2)
 
         label4 = ttk.Label(popup, text="Repeat").grid(row=3, column=0, padx=10, pady=10)
         self.newText4 = Text(popup, height=1)
@@ -148,13 +176,42 @@ class View:
     def donothing(self):
        x = 0
 
+
+    def force_close(self):
+        try:
+            self.newPopup.destroy()
+        except:
+            pass
+
+        try:
+            self.editPopup.destroy()
+        except:
+            pass
+
+        try:
+            self.firstPopup.destroy()
+        except:
+            pass
+
+        self.root.destroy()
+
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
+
             try:
                 self.newPopup.destroy()
+            except:
+                pass
+
+            try:
                 self.editPopup.destroy()
-            except Exception as e:
-                print(e)
+            except:
+                pass
+
+            try:
+                self.firstPopup.destroy()
+            except:
+                pass
 
             self.root.destroy()
 
@@ -234,6 +291,7 @@ class View:
 
         # TODO hook this self.donothing call up to the password generation function and set it to update the appropriate textboxes
         button1 = ttk.Button(popup, text="Generate Password", command = self.donothing).grid(row=2, column=2)
+        button2 = ttk.Button(popup, text="Generate Memorable Password", command = self.donothing).grid(row=3, column=2)
 
         label4 = ttk.Label(popup, text="Repeat").grid(row=3, column=0, padx=10, pady=10)
         self.editText4 = Text(popup, height=1)
