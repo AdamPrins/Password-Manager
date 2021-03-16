@@ -55,6 +55,7 @@ if __name__ == "__main__":
     #print(generateSalt())
     root = Tk()
     root.resizable(width=0, height=0)
+    root.title('Password Manager')
     ui = View(root)
 
     mainloop()
