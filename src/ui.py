@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 import json
+import encryption
 
 
 class View:
@@ -69,10 +70,12 @@ class View:
         self.editText6 = None
 
 
+        self.masterkey = "tempkey"
+
         arr = self.getAll()
 
         for i in range(len(arr)):
-            self.tree.insert("",1, text=arr[i]['id'], values=(arr[i]['title'],arr[i]['username'],arr[i]['url']))
+            self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey)))
 
 
 
@@ -102,7 +105,7 @@ class View:
 
     def insert_item_popup(self):
         popup = Tk()
-        popup.wm_title("Edit Entry")
+        popup.wm_title("Insert Entry")
 
         self.newPopup = popup
 
@@ -149,7 +152,7 @@ class View:
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             try:
                 self.newPopup.destroy()
-                seld.editPopup.destroy()
+                self.editPopup.destroy()
             except Exception as e:
                 print(e)
 
@@ -188,11 +191,11 @@ class View:
                 arr = data['data']
                 for i in range(len(arr)):
                     if arr[i]['id'] == id:
-                        arr[i]['title'] = title
-                        arr[i]['username'] = username
-                        arr[i]['password'] = password
-                        arr[i]['url'] = url
-                        arr[i]['info'] = notes
+                        arr[i]['title'] = encryption.encrypt(title, self.masterkey)
+                        arr[i]['username'] = encryption.encrypt(username, self.masterkey)
+                        arr[i]['password'] = encryption.encrypt(password, self.masterkey)
+                        arr[i]['url'] = encryption.encrypt(url, self.masterkey)
+                        arr[i]['info'] = encryption.encrypt(notes, self.masterkey)
             except Exception as e:
                 print(e)
 
@@ -244,12 +247,12 @@ class View:
         self.editText6 = Text(popup, height=5)
         self.editText6.grid(row=5, column=1, padx=10, pady=10)
 
-        self.editText1.insert(END,item2["title"])
-        self.editText2.insert(END,item2["username"])
-        self.editText3.insert(END,item2["password"])
-        self.editText4.insert(END,item2["password"])
-        self.editText5.insert(END,item2["url"])
-        self.editText6.insert(END,item2["info"])
+        self.editText1.insert(END,encryption.decrypt(item2["title"], self.masterkey))
+        self.editText2.insert(END,encryption.decrypt(item2["username"], self.masterkey))
+        self.editText3.insert(END,encryption.decrypt(item2["password"], self.masterkey))
+        self.editText4.insert(END,encryption.decrypt(item2["password"], self.masterkey))
+        self.editText5.insert(END,encryption.decrypt(item2["url"], self.masterkey))
+        self.editText6.insert(END,encryption.decrypt(item2["info"], self.masterkey))
 
 
         B1 = ttk.Button(popup, text="Ok", command = lambda:[self.edit_selected(rawitem)]).grid(row=6, column=2)
@@ -363,7 +366,7 @@ class View:
                 print(e)
 
         # appends new password
-        data['data'].append({"id":id, "title":title, "username":username, "password":password, "url":url, "info":info})
+        data['data'].append({"id":id, "title":encryption.encrypt(title,self.masterkey), "username":encryption.encrypt(username,self.masterkey), "password":encryption.encrypt(password,self.masterkey), "url":encryption.encrypt(url,self.masterkey), "info":encryption.encrypt(info, self.masterkey)})
 
         # writes new password
         with open('data.txt', 'w') as outfile:
