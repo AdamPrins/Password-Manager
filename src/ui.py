@@ -9,6 +9,7 @@ import time
 
 class View:
     def __init__(self):
+        self.closeFlag = False
         pass
 
 
@@ -46,6 +47,7 @@ class View:
         self.menubar = Menu(self.root)
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="New Entry", command=self.insert_item_popup)
+        self.filemenu.add_command(label="Change Master Password", command=self.change_master_popup)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.on_closing)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
@@ -56,23 +58,6 @@ class View:
         self.root.config(menu=self.menubar)
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # item related to "newPopup" (create a new password)
-        self.newPopup = None
-        self.newText1 = None
-        self.newText2 = None
-        self.newText3 = None
-        self.newText4 = None
-        self.newText5 = None
-        self.newText6 = None
-
-        # items related to "editPopup" (edit a password)
-        self.editPopup = None
-        self.editText1 = None
-        self.editText2 = None
-        self.editText3 = None
-        self.editText4 = None
-        self.editText5 = None
-        self.editText6 = None
 
         arr = self.getAll()
 
@@ -80,13 +65,21 @@ class View:
             for i in range(len(arr)):
                 self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey)))
         except:
-            messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
-            self.force_close()
+            if self.closeFlag:
+                messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
+                self.force_close()
+            else:
+                self.force_close()
 
 
     def setmaster(self, event=None):
         self.masterkey = self.passwordText1.get("1.0", END).strip("\n")
         self.firstPopup.destroy()
+
+
+
+    def change_master_popup(self):
+        pass
 
     def masterkey_popup(self):
         popup = Tk()
@@ -95,14 +88,16 @@ class View:
 
         self.firstPopup = popup;
 
-        label1 = ttk.Label(popup, text="Password").grid(row=0, column=0, padx=10, pady=10)
+        label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your exsisting one").grid(row=0, column=1, padx=10, pady=10)
+
+        label1 = ttk.Label(popup, text="Password").grid(row=1, column=0, padx=10, pady=10)
         self.passwordText1 = Text(popup, height=1)
-        self.passwordText1.grid(row=0, column=1, padx=10, pady=10)
+        self.passwordText1.grid(row=1, column=1, padx=10, pady=10)
 
 
-        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.setmaster()]).grid(row=1, column=2)
+        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.setmaster()]).grid(row=2, column=2)
 
-        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=1, column=3)
+        B2 = ttk.Button(popup, text="Cancel", command = lambda:[self.force_close()]).grid(row=2, column=3)
 
         popup.mainloop()
 
@@ -178,6 +173,7 @@ class View:
 
 
     def force_close(self):
+        self.closeflag = True
         try:
             self.newPopup.destroy()
         except:
