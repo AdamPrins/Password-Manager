@@ -24,17 +24,18 @@ class View:
         self.vsb.pack(side='right', fill='y')
         self.tree.configure(yscrollcommand=self.vsb.set)
 
-        self.columns = ("one","two","three")
-        self.tree["columns"]=("one","two","three")
+        self.tree["columns"]=("one","two","three", "four")
         self.tree.column("#0", width=30, minwidth=30, stretch=NO)
         self.tree.column("one", width=180, minwidth=180, stretch=NO)
         self.tree.column("two", width=180, minwidth=180, stretch=NO)
         self.tree.column("three", width=400, minwidth=200, stretch=NO)
+        self.tree.column("four", width=180, minwidth=180, stretch=NO)
 
         self.tree.heading("#0",text="ID",anchor=W)
         self.tree.heading("one", text="Title",anchor=W)
         self.tree.heading("two", text="Username",anchor=W)
         self.tree.heading("three", text="URL",anchor=W)
+        self.tree.heading("four", text="Strength",anchor=W)
 
         self.popup_menu = Menu(self.root, tearoff=0)
         self.popup_menu.add_command(label="Delete",command=self.delete_selected)
@@ -63,8 +64,10 @@ class View:
 
         try:
             for i in range(len(arr)):
-                self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey)))
-        except:
+                self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey), passwordAnalysis.passwordStrength(encryption.decrypt(arr[i]['password'], self.masterkey))))
+        except Exception as e:
+            print(e)
+
             if self.closeFlag:
                 messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
                 self.force_close()
@@ -107,6 +110,7 @@ class View:
             self.newText3.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             self.newText4.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             messagebox.showwarning("Mismatched Passwords", "The entered passwords are not the same.")
+            self.newPopup.focus_force()
             return
 
         title = ""
@@ -122,7 +126,7 @@ class View:
 
         self.newPopup.destroy()
         uuid = self.writePassword(title, username, password, url, notes)
-        self.tree.insert("",1, text=uuid, values=(title,username,url))
+        self.tree.insert("",1, text=uuid, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
         self.root.update()
 
     def insert_item_popup(self):
@@ -225,6 +229,7 @@ class View:
             self.editText3.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             self.editText4.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             messagebox.showwarning("Mismatched Passwords", "The entered passwords are not the same.")
+            self.editPopup.focus_force()
             return
 
 
@@ -256,7 +261,7 @@ class View:
             json.dump(data, outfile)
 
         self.editPopup.destroy()
-        self.tree.insert("",1, text=id, values=(title,username,url))
+        self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
         self.tree.delete(rawitem)
         self.root.update()
 
