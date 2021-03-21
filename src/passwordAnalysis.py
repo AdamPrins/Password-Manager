@@ -90,7 +90,9 @@ def passwordStrength(password):
     """
     This determins the passowrd strength of the passed password
     """
-    if isPasswordKnown(password)>0:
+    if len(password) == 0:
+        return "empty"
+    elif isPasswordKnown(password)>0:
         return "Known Password"
     else:
         entropy = passwordEntropy(password)
