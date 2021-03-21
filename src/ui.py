@@ -18,6 +18,7 @@ class View:
 
         self.tree = ttk.Treeview(self.root, selectmode='browse')
         self.tree.pack(side='left')
+        self.tree.bind("<Button-2>", self.popup)
         self.tree.bind("<Button-3>", self.popup)
 
         self.vsb = ttk.Scrollbar(self.root, orient="vertical", command=self.tree.yview)
@@ -130,50 +131,11 @@ class View:
         self.root.update()
 
     def insert_item_popup(self):
-        popup = Tk()
-        popup.wm_title("Insert Entry")
-
-        self.newPopup = popup
-
-        label1 = ttk.Label(popup, text="Title").grid(row=0, column=0, padx=10, pady=10)
-        self.newText1 = Text(popup, height=1)
-        self.newText1.grid(row=0, column=1, padx=10, pady=10)
-
-
-        label2 = ttk.Label(popup, text="Username").grid(row=1, column=0, padx=10, pady=10)
-        self.newText2 = Text(popup, height=1)
-        self.newText2.grid(row=1, column=1, padx=10, pady=10)
-
-        label3 = ttk.Label(popup, text="Password").grid(row=2, column=0, padx=10, pady=10)
-        self.newText3 = Text(popup, height=1)
-        self.newText3.grid(row=2, column=1, padx=10, pady=10)
-
-        # TODO hook this self.donothing call up to the password generation function and set it to update the appropriate textboxes
-        button1 = ttk.Button(popup, text="Generate Password", command = self.donothing).grid(row=2, column=2)
-        button2 = ttk.Button(popup, text="Generate Memorable Password", command = self.donothing).grid(row=3, column=2)
-
-        label4 = ttk.Label(popup, text="Repeat").grid(row=3, column=0, padx=10, pady=10)
-        self.newText4 = Text(popup, height=1)
-        self.newText4.grid(row=3, column=1, padx=10, pady=10)
-
-        label5 = ttk.Label(popup, text="URL").grid(row=4, column=0, padx=10, pady=10)
-        self.newText5 = Text(popup, height=1)
-        self.newText5.grid(row=4, column=1, padx=10, pady=10)
-
-        label6 = ttk.Label(popup, text="Notes").grid(row=5, column=0, padx=10, pady=10)
-        self.newText6 = Text(popup, height=5)
-        self.newText6.grid(row=5, column=1, padx=10, pady=10)
-
-
-        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.insert_item()]).grid(row=6, column=2)
-
-        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=6, column=3)
-
-        popup.mainloop()
+        self.entry_popup()
 
 
     def donothing(self):
-       x = 0
+       pass
 
 
     def force_close(self):
@@ -184,7 +146,7 @@ class View:
             pass
 
         try:
-            self.editPopup.destroy()
+            self.entryPopup.destroy()
         except:
             pass
 
@@ -204,7 +166,7 @@ class View:
                 pass
 
             try:
-                self.editPopup.destroy()
+                self.entryPopup.destroy()
             except:
                 pass
 
@@ -220,49 +182,51 @@ class View:
         self.tree.delete(self.tree.focus())
         self.deletePassword(item["text"])
 
-    def edit_selected(self, rawitem):
+    def confirm_entry(self, rawitem):
 
-        item = self.tree.item(rawitem)
-        id = item["text"]
-
-        if self.editText3.get("1.0", END) != self.editText4.get("1.0", END):
-            self.editText3.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
-            self.editText4.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+        if self.entryPassword.get("1.0", END) != self.entryConfirm.get("1.0", END):
+            self.entryPassword.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+            self.entryConfirm.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             messagebox.showwarning("Mismatched Passwords", "The entered passwords are not the same.")
-            self.editPopup.focus_force()
+            self.entryPopup.focus_force()
             return
 
+        title = self.entryTitle.get("1.0", END+"-1c")
+        username = self.entryUsername.get("1.0", END+"-1c")
+        password = self.entryPassword.get("1.0", END+"-1c")
+        url = self.entryURL.get("1.0", END+"-1c")
+        notes = self.entryNotes.get("1.0", END+"-1c")
 
-        username = self.editText2.get("1.0", END)
-        password = self.editText3.get("1.0", END)
-        url = self.editText5.get("1.0", END)
-        notes = self.editText6.get("1.0", END)
-
-        if len(self.editText1.get("1.0", END)) <= 1:
+        if len(title) <= 0:
             title = "Untitled"
+
+        if rawitem is not None:
+            item = self.tree.item(rawitem)
+            id = item["text"]
+            with open('data.txt') as json_file:
+                try:
+                    data = json.load(json_file)
+                    arr = data['data']
+                    for i in range(len(arr)):
+                        if arr[i]['id'] == id:
+                            arr[i]['title'] = encryption.encrypt(title, self.masterkey)
+                            arr[i]['username'] = encryption.encrypt(username, self.masterkey)
+                            arr[i]['password'] = encryption.encrypt(password, self.masterkey)
+                            arr[i]['url'] = encryption.encrypt(url, self.masterkey)
+                            arr[i]['notes'] = encryption.encrypt(notes, self.masterkey)
+                except Exception as e:
+                    print(e)
+
+            with open('data.txt', 'w') as outfile:
+                json.dump(data, outfile)
+
+            self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
+            self.tree.delete(rawitem)
         else:
-            title = self.editText1.get("1.0", END)
+            uuid = self.writePassword(title, username, password, url, notes)
+            self.tree.insert("",1, text=uuid, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
 
-        with open('data.txt') as json_file:
-            try:
-                data = json.load(json_file)
-                arr = data['data']
-                for i in range(len(arr)):
-                    if arr[i]['id'] == id:
-                        arr[i]['title'] = encryption.encrypt(title, self.masterkey)
-                        arr[i]['username'] = encryption.encrypt(username, self.masterkey)
-                        arr[i]['password'] = encryption.encrypt(password, self.masterkey)
-                        arr[i]['url'] = encryption.encrypt(url, self.masterkey)
-                        arr[i]['info'] = encryption.encrypt(notes, self.masterkey)
-            except Exception as e:
-                print(e)
-
-        with open('data.txt', 'w') as outfile:
-            json.dump(data, outfile)
-
-        self.editPopup.destroy()
-        self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
-        self.tree.delete(rawitem)
+        self.entryPopup.destroy()
         self.root.update()
 
 
@@ -272,49 +236,62 @@ class View:
         item = self.tree.item(self.tree.focus())
         item2 = self.getByID(item["text"])
 
+        title = encryption.decrypt(item2["title"], self.masterkey)
+        username = encryption.decrypt(item2["username"], self.masterkey)
+        password = encryption.decrypt(item2["password"], self.masterkey)
+        url = encryption.decrypt(item2["url"], self.masterkey)
+        notes = encryption.decrypt(item2["notes"], self.masterkey)
+
+        self.entry_popup(title=title, username=username,
+                        password=password, url=url,
+                        notes=notes, focus=True)
+
+
+
+    def entry_popup(self, title="", username="", password="", url="", notes="", focus=False):
+        if focus:
+            rawitem = self.tree.focus()
+        else:
+            rawitem = None
+        item = self.tree.item(self.tree.focus())
+        item2 = self.getByID(item["text"])
+
         popup = Tk()
         popup.wm_title("Edit Entry")
 
-        self.editPopup = popup
+        self.entryPopup = popup
 
         label1 = ttk.Label(popup, text="Title").grid(row=0, column=0, padx=10, pady=10)
-        self.editText1 = Text(popup, height=1)
-        self.editText1.grid(row=0, column=1, padx=10, pady=10)
-
+        self.entryTitle = Text(popup, height=1)
+        self.entryTitle.grid(row=0, column=1, padx=10, pady=10)
+        self.entryTitle.insert(END,title)
 
         label2 = ttk.Label(popup, text="Username").grid(row=1, column=0, padx=10, pady=10)
-        self.editText2 = Text(popup, height=1)
-        self.editText2.grid(row=1, column=1, padx=10, pady=10)
+        self.entryUsername = Text(popup, height=1)
+        self.entryUsername.grid(row=1, column=1, padx=10, pady=10)
+        self.entryUsername.insert(END,username)
 
         label3 = ttk.Label(popup, text="Password").grid(row=2, column=0, padx=10, pady=10)
-        self.editText3 = Text(popup, height=1)
-        self.editText3.grid(row=2, column=1, padx=10, pady=10)
-
-        # TODO hook this self.donothing call up to the password generation function and set it to update the appropriate textboxes
-        button1 = ttk.Button(popup, text="Generate Password", command = self.donothing).grid(row=2, column=2)
-        button2 = ttk.Button(popup, text="Generate Memorable Password", command = self.donothing).grid(row=3, column=2)
+        self.entryPassword = Text(popup, height=1)
+        self.entryPassword.grid(row=2, column=1, padx=10, pady=10)
+        self.entryPassword.insert(END,password)
 
         label4 = ttk.Label(popup, text="Repeat").grid(row=3, column=0, padx=10, pady=10)
-        self.editText4 = Text(popup, height=1)
-        self.editText4.grid(row=3, column=1, padx=10, pady=10)
+        self.entryConfirm = Text(popup, height=1)
+        self.entryConfirm.grid(row=3, column=1, padx=10, pady=10)
+        self.entryConfirm.insert(END,password)
 
         label5 = ttk.Label(popup, text="URL").grid(row=4, column=0, padx=10, pady=10)
-        self.editText5 = Text(popup, height=1)
-        self.editText5.grid(row=4, column=1, padx=10, pady=10)
+        self.entryURL = Text(popup, height=1)
+        self.entryURL.grid(row=4, column=1, padx=10, pady=10)
+        self.entryURL.insert(END,url)
 
         label6 = ttk.Label(popup, text="Notes").grid(row=5, column=0, padx=10, pady=10)
-        self.editText6 = Text(popup, height=5)
-        self.editText6.grid(row=5, column=1, padx=10, pady=10)
+        self.entryNotes = Text(popup, height=5)
+        self.entryNotes.grid(row=5, column=1, padx=10, pady=10)
+        self.entryNotes.insert(END,notes)
 
-        self.editText1.insert(END,encryption.decrypt(item2["title"], self.masterkey))
-        self.editText2.insert(END,encryption.decrypt(item2["username"], self.masterkey))
-        self.editText3.insert(END,encryption.decrypt(item2["password"], self.masterkey))
-        self.editText4.insert(END,encryption.decrypt(item2["password"], self.masterkey))
-        self.editText5.insert(END,encryption.decrypt(item2["url"], self.masterkey))
-        self.editText6.insert(END,encryption.decrypt(item2["info"], self.masterkey))
-
-
-        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.edit_selected(rawitem)]).grid(row=6, column=2)
+        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.confirm_entry(rawitem)]).grid(row=6, column=2)
 
         B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=6, column=3)
 
@@ -326,7 +303,7 @@ class View:
 
         item2 = self.getByID(item["text"])
 
-        self.writePassword(item2['title'], item2['username'], item2['password'], item2['url'], item2['info'])
+        self.writePassword(item2['title'], item2['username'], item2['password'], item2['url'], item2['notes'])
         self.tree.insert("",1, text=self.getLastID(), values=item["values"])
 
     def popup(self, event):
@@ -404,7 +381,7 @@ class View:
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
 
-    def writePassword(self, title, username, password, url, info=""):
+    def writePassword(self, title, username, password, url, notes=""):
 
         data = {}
         data['data'] = []
@@ -425,7 +402,7 @@ class View:
                 print(e)
 
         # appends new password
-        data['data'].append({"id":id, "title":encryption.encrypt(title,self.masterkey), "username":encryption.encrypt(username,self.masterkey), "password":encryption.encrypt(password,self.masterkey), "url":encryption.encrypt(url,self.masterkey), "info":encryption.encrypt(info, self.masterkey)})
+        data['data'].append({"id":id, "title":encryption.encrypt(title,self.masterkey), "username":encryption.encrypt(username,self.masterkey), "password":encryption.encrypt(password,self.masterkey), "url":encryption.encrypt(url,self.masterkey), "notes":encryption.encrypt(notes, self.masterkey)})
 
         # writes new password
         with open('data.txt', 'w') as outfile:
