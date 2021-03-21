@@ -168,6 +168,11 @@ class View:
             pass
 
         try:
+            self.generate["popup"].destroy()
+        except:
+            pass
+
+        try:
             self.firstPopup.destroy()
         except:
             pass
@@ -243,6 +248,7 @@ class View:
             self.entry[fields[i][0]].bind("<Tab>", self.focus_next_widget)
             self.entry[fields[i][0]].insert(END,fields[i][1])
 
+        generateButton = ttk.Button(self.entry["popup"], text="Generate Password", command = lambda: [self.generate_password_popup(self.entry)] ).grid(row=2, column=3)
         B1 = ttk.Button(self.entry["popup"], text="Ok", command = lambda:[self.confirm_entry(rawitem)]).grid(row=6, column=2)
         B2 = ttk.Button(self.entry["popup"], text="Cancel", command = lambda:[self.entry["popup"].destroy()]).grid(row=6, column=3)
 
@@ -309,7 +315,88 @@ class View:
         self.writePassword(item2['title'], item2['username'], item2['password'], item2['url'], item2['notes'])
         self.tree.insert("",1, text=self.getLastID(), values=item["values"])
 
-    
+    def generate_password_popup(self, parentWindow=None):
+        """
+        Creates a popup for generating passwords
+
+        """
+
+        self.generate = {}
+        self.generate["popup"] = Tk()
+        self.generate["popup"].wm_title("Generate Password")
+
+        signature = inspect.signature(passwordAnalysis.generatePassword)
+        functions = (passwordAnalysis.generatePassword, passwordAnalysis.generateMemorablePassword)
+
+        self.generate["password"] = Text(self.generate["popup"], height=1)
+        self.generate["password"].grid(row=0, column=0, padx=10, pady=10, columnspan=2)
+        self.generate["password"].bind("<Tab>", self.focus_next_widget)
+        self.generate["password"].insert(END, passwordAnalysis.generatePassword())
+
+        pos = 0
+        initialRow = 3
+        value = {}
+        for k, v in signature.parameters.items():
+            if pos == 0:
+                # Creates the length slider
+                self.generate[k] = Scale(self.generate["popup"], from_=1, to=60, orient=HORIZONTAL, label=k)
+                self.generate[k].grid(row=initialRow+pos//2, column=pos%2, padx=10, pady=10)
+                self.generate[k].set(v.default)
+                value[k] = self.generate[k].get
+            else:
+                # Creates checkboxes for the flags, and sets them to the default value
+                var = BooleanVar()
+                self.generate[k] = ttk.Checkbutton(self.generate["popup"], text=k[3:], onvalue=True, offvalue=False, variable=var)
+                self.generate[k].grid(row=initialRow+pos//2, column=pos%2, padx=10, pady=10)
+                value[k] = lambda x=self.generate[k]: x.instate(['selected'])
+                self.generate[k].state(['!alternate'])
+                if v.default:
+                    self.generate[k].state(['selected'])
+                else:
+                    self.generate[k].state(['!selected'])
+            pos = pos+1
+
+        ttk.Button(self.generate["popup"], text="Generate", command = lambda: self.generatePassword(value, self.generate["password"])).grid(row=1, column=0, columnspan=2)
+        ttk.Button(self.generate["popup"], text="Ok", command = lambda: self.generate_password_confirm(parentWindow)).grid(row=initialRow+1+pos//2, column=0)
+        ttk.Button(self.generate["popup"], text="Cancel", command = lambda:[self.generate["popup"].destroy()]).grid(row=initialRow+1+pos//2, column=1)
+
+        self.generate["popup"].mainloop()
+
+    def generatePassword(self, dict, text):
+        """
+        Generates a password using the current values in the UI
+        """
+
+        text.delete(1.0,"end")
+        newDict = {}
+        for k, v in dict.items():
+            newDict[k] = v()
+        password = passwordAnalysis.generatePassword(**newDict)
+        text.insert(1.0, password)
+
+    def generate_password_confirm(self, parentWindow):
+        """
+        Puts the password on the clipboard
+        if an entry popup is open, it writes to its fields as well
+        """
+
+        password = self.generate["password"].get("1.0", END+"-1c")
+
+        # copies password to clipboard
+        self.generate["popup"].clipboard_clear()
+        self.generate["popup"].clipboard_append(password)
+        self.generate["popup"].update()
+
+        # Writes the password to the parent entry popup, if there is one
+        if parentWindow is not None:
+            parentWindow["password"].delete(1.0,"end")
+            parentWindow["confirmation"].delete(1.0,"end")
+
+            parentWindow["password"].insert(1.0, password)
+            parentWindow["confirmation"].insert(1.0, password)
+
+        self.generate["popup"].destroy()
+
 
     def popup(self, event):
         """action in event of button 3 on tree view"""
