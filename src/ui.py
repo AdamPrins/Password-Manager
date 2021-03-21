@@ -6,6 +6,7 @@ import encryption
 import passwordAnalysis
 import time
 import inspect
+import pyperclip
 
 
 class View:
@@ -43,6 +44,8 @@ class View:
         self.popup_menu.add_command(label="View/Edit Info",command=self.edit_selected_popup)
         self.popup_menu.add_command(label="Clone",command=self.clone_selected)
         self.popup_menu.add_command(label="Delete",command=self.delete_selected)
+        self.popup_menu.add_command(label="Copy Username",command=self.copy_selected_username)
+        self.popup_menu.add_command(label="Copy Password",command=self.copy_selected_password)
 
         self.popup_menu2 = Menu(self.root, tearoff=0)
         self.popup_menu2.add_command(label="New Entry",command=self.insert_item_popup)
@@ -94,7 +97,7 @@ class View:
 
         self.firstPopup = popup;
 
-        label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your exsisting one").grid(row=0, column=1, padx=10, pady=10)
+        label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your existing one").grid(row=0, column=1, padx=10, pady=10)
 
         label1 = ttk.Label(popup, text="Password").grid(row=1, column=0, padx=10, pady=10)
         self.passwordText1 = Text(popup, height=1)
@@ -185,6 +188,15 @@ class View:
         self.tree.delete(self.tree.focus())
         self.deletePassword(item["text"])
 
+    def copy_selected_password(self):
+        item = self.tree.item(self.tree.focus())
+        item2 = self.getByID(item["text"])
+        password = encryption.decrypt(item2["password"], self.masterkey)
+        pyperclip.copy(password)
+
+    def copy_selected_username(self):
+        item = self.tree.item(self.tree.focus())
+        pyperclip.copy(item["values"][1])
 
     def insert_item_popup(self):
         """
@@ -416,7 +428,7 @@ class View:
             pass
 
     def getAll(self):
-        # creates file if not exsists
+        # creates file if not exists
         with open('data.txt', 'a') as json_file:
             pass
 
@@ -431,7 +443,7 @@ class View:
         return []
 
     def getByID(self, id):
-        # creates file if not exsists
+        # creates file if not exists
         with open('data.txt', 'a') as json_file:
             pass
 
@@ -479,7 +491,7 @@ class View:
         data['data'] = []
         id = 1
 
-        # creates file if not exsists
+        # creates file if not exists
         with open('data.txt', 'a') as json_file:
             pass
 
