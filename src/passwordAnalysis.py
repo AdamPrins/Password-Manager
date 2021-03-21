@@ -10,7 +10,7 @@ brackets = "<>{}[]()"
 irregularSymbols = ";:\"\'"
 
 
-def generateMemorablePassword(length=4, hasCapitals=True, paddingType=list(string.digits)):
+def generateMemorablePassword(words=4, hasCapitals=True, paddingType=list(string.digits)):
     """
     Generates a memorable passord from 4 dictionary words (of at least 4 letters),
     one of the words will be in fullcaps if hasCapitals is True.
@@ -57,10 +57,12 @@ def generatePassword(length=20, hasAlphabet=True, hasCapitals=True, hasDigits=Tr
     if hasAdvancedSymbos:
         characterPool += list(brackets)
 
+    if length==0 or len(characterPool) == 0:
+        return ""
+
     password = ""
     for i in range(length):
         password += secrets.choice(characterPool)
-
     return password
 
 
@@ -90,7 +92,9 @@ def passwordStrength(password):
     """
     This determins the passowrd strength of the passed password
     """
-    if isPasswordKnown(password)>0:
+    if len(password) == 0:
+        return "empty"
+    elif isPasswordKnown(password)>0:
         return "Known Password"
     else:
         entropy = passwordEntropy(password)
@@ -147,7 +151,8 @@ def passwordEntropy(password):
     # Iterates over possible character combinations, looking for words
     # Starting with 4 characters, since <4 character words have higher entropy
     # than the individual characters
-    for wordLength in range(4,len(password)+1):
+    # caps the wordlength at 15 for better speed
+    for wordLength in range(4,min(len(password)+1, 15)):
         for pos in range(0,len(password)-wordLength+1):
             if (simplePass[pos:pos+wordLength] in wordlist):
 
