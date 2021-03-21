@@ -5,6 +5,7 @@ import json
 import encryption
 import passwordAnalysis
 import time
+import inspect
 
 
 class View:
@@ -18,8 +19,8 @@ class View:
 
         self.tree = ttk.Treeview(self.root, selectmode='browse')
         self.tree.pack(side='left')
-        self.tree.bind("<Button-2>", self.popup)
-        self.tree.bind("<Button-3>", self.popup)
+        self.tree.bind("<Button-2>", self.popup) # Right click for mac
+        self.tree.bind("<Button-3>", self.popup) # Right click for windows/linux
 
         self.vsb = ttk.Scrollbar(self.root, orient="vertical", command=self.tree.yview)
         self.vsb.pack(side='right', fill='y')
@@ -39,9 +40,9 @@ class View:
         self.tree.heading("four", text="Strength",anchor=W)
 
         self.popup_menu = Menu(self.root, tearoff=0)
-        self.popup_menu.add_command(label="Delete",command=self.delete_selected)
-        self.popup_menu.add_command(label="Clone",command=self.clone_selected)
         self.popup_menu.add_command(label="View/Edit Info",command=self.edit_selected_popup)
+        self.popup_menu.add_command(label="Clone",command=self.clone_selected)
+        self.popup_menu.add_command(label="Delete",command=self.delete_selected)
 
         self.popup_menu2 = Menu(self.root, tearoff=0)
         self.popup_menu2.add_command(label="New Entry",command=self.insert_item_popup)
@@ -49,6 +50,7 @@ class View:
         self.menubar = Menu(self.root)
         self.filemenu = Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="New Entry", command=self.insert_item_popup)
+        self.filemenu.add_command(label="Generate Password", command=self.generate_password_popup)
         self.filemenu.add_command(label="Change Master Password", command=self.change_master_popup)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.on_closing)
@@ -130,15 +132,30 @@ class View:
         self.tree.insert("",1, text=uuid, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
         self.root.update()
 
-    def insert_item_popup(self):
-        self.entry_popup()
+
+    def focus_next_widget(self, event):
+        event.widget.tk_focusNext().focus()
+        return("break")
 
 
     def donothing(self):
        pass
 
 
+    def on_closing(self):
+        """
+        Asks for confirmation on trying to close
+        """
+
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.force_close()
+
+
     def force_close(self):
+        """
+        Closes the program
+        """
+
         self.closeflag = True
         try:
             self.newPopup.destroy()
@@ -146,7 +163,7 @@ class View:
             pass
 
         try:
-            self.entryPopup.destroy()
+            self.entry["popup"].destroy()
         except:
             pass
 
@@ -157,45 +174,99 @@ class View:
 
         self.root.destroy()
 
-    def on_closing(self):
-        if messagebox.askokcancel("Quit", "Do you want to quit?"):
-
-            try:
-                self.newPopup.destroy()
-            except:
-                pass
-
-            try:
-                self.entryPopup.destroy()
-            except:
-                pass
-
-            try:
-                self.firstPopup.destroy()
-            except:
-                pass
-
-            self.root.destroy()
 
     def delete_selected(self):
         item = self.tree.item(self.tree.focus())
         self.tree.delete(self.tree.focus())
         self.deletePassword(item["text"])
 
-    def confirm_entry(self, rawitem):
 
-        if self.entryPassword.get("1.0", END) != self.entryConfirm.get("1.0", END):
-            self.entryPassword.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
-            self.entryConfirm.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+    def insert_item_popup(self):
+        """
+        Used for adding a new entry into the table
+        """
+
+        self.entry_popup()
+
+
+    def edit_selected_popup(self):
+        """
+        Used for editing an existing entry in the table
+        """
+
+        rawitem = self.tree.focus()
+        item = self.tree.item(self.tree.focus())
+        item2 = self.getByID(item["text"])
+
+        # Retreives the values for the existing entry
+        title = encryption.decrypt(item2["title"], self.masterkey)
+        username = encryption.decrypt(item2["username"], self.masterkey)
+        password = encryption.decrypt(item2["password"], self.masterkey)
+        url = encryption.decrypt(item2["url"], self.masterkey)
+        notes = encryption.decrypt(item2["notes"], self.masterkey)
+
+        # Creates an entry popup with prefilled fields
+        self.entry_popup(title=title, username=username,
+                        password=password, url=url,
+                        notes=notes, focus=True)
+
+
+    def entry_popup(self, title="", username="", password="", url="", notes="", focus=False):
+        """
+        Defines the popup for creating/editing password entries
+        the feilds populate the text fields with the existing values
+        """
+
+        if focus:
+            rawitem = self.tree.focus()
+        else:
+            rawitem = None
+
+        fields = [
+            ("title", title),
+            ("username", username),
+            ("password", password),
+            ("confirmation", password),
+            ("url", url),
+            ("notes", notes)
+        ]
+
+        self.entry = {}
+        self.entry["popup"] = Tk()
+        self.entry["popup"].wm_title("Edit Entry")
+
+        # Creates a label and textbox for each field
+        for i in range(len(fields)):
+            ttk.Label(self.entry["popup"], text=fields[i][0].capitalize()).grid(row=i, column=0, padx=10, pady=10)
+            self.entry[fields[i][0]] = Text(self.entry["popup"], height=1)
+            self.entry[fields[i][0]].grid(row=i, column=1, padx=10, pady=10)
+            self.entry[fields[i][0]].bind("<Tab>", self.focus_next_widget)
+            self.entry[fields[i][0]].insert(END,fields[i][1])
+
+        B1 = ttk.Button(self.entry["popup"], text="Ok", command = lambda:[self.confirm_entry(rawitem)]).grid(row=6, column=2)
+        B2 = ttk.Button(self.entry["popup"], text="Cancel", command = lambda:[self.entry["popup"].destroy()]).grid(row=6, column=3)
+
+        self.entry["popup"].mainloop()
+
+
+    def confirm_entry(self, rawitem):
+        """
+        Makes sure fields are valid
+        If so, it stores and saves the values, and closes the entry popup
+        """
+
+        if self.entry["password"].get("1.0", END) != self.entry["confirmation"].get("1.0", END):
+            self.entry["password"].config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+            self.entry["confirmation"].config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
             messagebox.showwarning("Mismatched Passwords", "The entered passwords are not the same.")
-            self.entryPopup.focus_force()
+            self.entry["popup"].focus_force()
             return
 
-        title = self.entryTitle.get("1.0", END+"-1c")
-        username = self.entryUsername.get("1.0", END+"-1c")
-        password = self.entryPassword.get("1.0", END+"-1c")
-        url = self.entryURL.get("1.0", END+"-1c")
-        notes = self.entryNotes.get("1.0", END+"-1c")
+        title = self.entry["title"].get("1.0", END+"-1c")
+        username = self.entry["username"].get("1.0", END+"-1c")
+        password = self.entry["password"].get("1.0", END+"-1c")
+        url = self.entry["url"].get("1.0", END+"-1c")
+        notes = self.entry["notes"].get("1.0", END+"-1c")
 
         if len(title) <= 0:
             title = "Untitled"
@@ -226,76 +297,8 @@ class View:
             uuid = self.writePassword(title, username, password, url, notes)
             self.tree.insert("",1, text=uuid, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
 
-        self.entryPopup.destroy()
+        self.entry["popup"].destroy()
         self.root.update()
-
-
-    def edit_selected_popup(self):
-
-        rawitem = self.tree.focus()
-        item = self.tree.item(self.tree.focus())
-        item2 = self.getByID(item["text"])
-
-        title = encryption.decrypt(item2["title"], self.masterkey)
-        username = encryption.decrypt(item2["username"], self.masterkey)
-        password = encryption.decrypt(item2["password"], self.masterkey)
-        url = encryption.decrypt(item2["url"], self.masterkey)
-        notes = encryption.decrypt(item2["notes"], self.masterkey)
-
-        self.entry_popup(title=title, username=username,
-                        password=password, url=url,
-                        notes=notes, focus=True)
-
-
-
-    def entry_popup(self, title="", username="", password="", url="", notes="", focus=False):
-        if focus:
-            rawitem = self.tree.focus()
-        else:
-            rawitem = None
-        item = self.tree.item(self.tree.focus())
-        item2 = self.getByID(item["text"])
-
-        popup = Tk()
-        popup.wm_title("Edit Entry")
-
-        self.entryPopup = popup
-
-        label1 = ttk.Label(popup, text="Title").grid(row=0, column=0, padx=10, pady=10)
-        self.entryTitle = Text(popup, height=1)
-        self.entryTitle.grid(row=0, column=1, padx=10, pady=10)
-        self.entryTitle.insert(END,title)
-
-        label2 = ttk.Label(popup, text="Username").grid(row=1, column=0, padx=10, pady=10)
-        self.entryUsername = Text(popup, height=1)
-        self.entryUsername.grid(row=1, column=1, padx=10, pady=10)
-        self.entryUsername.insert(END,username)
-
-        label3 = ttk.Label(popup, text="Password").grid(row=2, column=0, padx=10, pady=10)
-        self.entryPassword = Text(popup, height=1)
-        self.entryPassword.grid(row=2, column=1, padx=10, pady=10)
-        self.entryPassword.insert(END,password)
-
-        label4 = ttk.Label(popup, text="Repeat").grid(row=3, column=0, padx=10, pady=10)
-        self.entryConfirm = Text(popup, height=1)
-        self.entryConfirm.grid(row=3, column=1, padx=10, pady=10)
-        self.entryConfirm.insert(END,password)
-
-        label5 = ttk.Label(popup, text="URL").grid(row=4, column=0, padx=10, pady=10)
-        self.entryURL = Text(popup, height=1)
-        self.entryURL.grid(row=4, column=1, padx=10, pady=10)
-        self.entryURL.insert(END,url)
-
-        label6 = ttk.Label(popup, text="Notes").grid(row=5, column=0, padx=10, pady=10)
-        self.entryNotes = Text(popup, height=5)
-        self.entryNotes.grid(row=5, column=1, padx=10, pady=10)
-        self.entryNotes.insert(END,notes)
-
-        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.confirm_entry(rawitem)]).grid(row=6, column=2)
-
-        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=6, column=3)
-
-        popup.mainloop()
 
 
     def clone_selected(self):
@@ -305,6 +308,8 @@ class View:
 
         self.writePassword(item2['title'], item2['username'], item2['password'], item2['url'], item2['notes'])
         self.tree.insert("",1, text=self.getLastID(), values=item["values"])
+
+    
 
     def popup(self, event):
         """action in event of button 3 on tree view"""
