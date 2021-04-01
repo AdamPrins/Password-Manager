@@ -474,7 +474,7 @@ class View:
     def deletePassword(self, id):
         with open('data.txt', 'r') as data_file:
             data = json.load(data_file)
-
+        data = encryption.file_decrypter('data.txt', self.masterkey)
         arr = data['data']
 
         for i in range(len(arr)):
@@ -511,5 +511,6 @@ class View:
         # writes new password
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
+        encryption.file_encrypter('data.txt', self.masterkey)
 
         return id
