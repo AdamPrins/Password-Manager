@@ -294,7 +294,7 @@ class View:
             id = item["text"]
             with open('data.txt') as json_file:
                 try:
-                    data = json.load(json_file)
+                    data = encryption.file_decrypter('data.txt', self.masterkey)
                     arr = data['data']
                     for i in range(len(arr)):
                         if arr[i]['id'] == id:
@@ -308,6 +308,7 @@ class View:
 
             with open('data.txt', 'w') as outfile:
                 json.dump(data, outfile)
+                encryption.file_encrypter('data.txt', self.masterkey)
 
             self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
             self.tree.delete(rawitem)
@@ -435,7 +436,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 return data['data']
             except Exception as e:
                 print(e)
@@ -450,7 +451,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 for i in range(len(arr)):
                     if(arr[i]['id'] == id):
@@ -462,7 +463,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 id = arr[len(arr) - 1]["id"]
                 return id
@@ -472,8 +473,8 @@ class View:
 
 
     def deletePassword(self, id):
-        with open('data.txt', 'r') as data_file:
-            data = json.load(data_file)
+        # with open('data.txt', 'r') as data_file:
+        #     data = json.load(data_file)
         data = encryption.file_decrypter('data.txt', self.masterkey)
         arr = data['data']
 
@@ -484,6 +485,7 @@ class View:
 
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
+            encryption.file_encrypter('data.txt', self.masterkey)
 
     def writePassword(self, title, username, password, url, notes=""):
 
@@ -498,7 +500,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 id = arr[len(arr) - 1]["id"]
                 id = id + 1
@@ -511,6 +513,6 @@ class View:
         # writes new password
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
-        encryption.file_encrypter('data.txt', self.masterkey)
+            encryption.file_encrypter('data.txt', self.masterkey)
 
         return id
