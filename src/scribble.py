@@ -4,118 +4,83 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import base64
+import os
 
 # with open('data.txt', 'w') as outfile:
 #     json.dump(data, outfile) 
 # encryption.file_encrypter('data.txt', 'master')
 
-# def export_pw(id: int, file_name: str, key: str):
-#     with open(file_name, 'r') as f:
-#         newData = {}
-#         data = encryption.file_decrypter(file_name, key) 
-#         print(data)
-#         print()  
-#         boool = False
-#         for items in data['data']:
-#             # print(items)
-#             for key, item in items.items():
-#                 if(key == 'id' and item == id):
-#                     # print(item)
-#                     boool = True
-#                     break
-#             if(boool):
-#                 for key2, itemmmmmmm in items.items():
-#                     if(key2 != 'id'):
-#                         print((itemmmmmmm))
-#                         item = encryption.decrypt(itemmmmmmm, 'qwerty123')
-#                 add = []
-#                 add.append(items)
-#                 newData['data'] = add
-#     print(newData)
-#############################################################################################
-            
-# t1 = (encryption.encrypt('dogshitpooper', 'master'))
-# print((t1))
-# t2 = encryption.decrypt(t1, 'master')
-# print(t2)
-# def import_pw():
-#Have to change the id for the password imported
+def getByID(id):
+    # creates file if not exists 
+    with open('data.txt', 'a') as json_file:
+        pass
 
+    # gets data from file if its there
+    with open('data.txt') as json_file:
+        try:
+            data = encryption.file_decrypter('data.txt', 'tempkey')
+            arr = data['data']
+            for i in range(len(arr)):
+                if(arr[i]['id'] == id):
+                    return arr[i]
+        except Exception as e:
+            print(e)
 
+def export_pw(id: int, file_name: str, key: str, pin: str):
+    data = encryption.file_decrypter(file_name, key) 
+    the_pw = getByID(id)       
 
-export_pw(1, 'data.txt', 'master')
+    #Decrypting data with masterkey
+    for k, i in the_pw.items():
+        if(k == 'id'):
+            the_pw[k] = -1
+        else:
+            the_pw[k] = encryption.decrypt(i, key)
 
-
-
-
-
-
-
-
-
-
-
-
-# {"data": [{"id": 1, "title": "jhabHx5aFwSPscypn+mGjhKHWUhgiYnt5JGfchOZWmM=", "username": "dp+YnVS6X/p8MTYawpjMhvQaRgfzYh0nyyfnMlFpncs=", "password": "3lh8naDdfam+GbFg2BTX+QJHt8DR15jQwZMnmMmCF81bvTODl9qaOXNEBdwyyqOY", "url": "kfUW5u4j15ECRoer5RHFaDk9K1y17BRJ3DEHqYc5ByU=", "notes": "OoJZzvDyfM/fg+xmONUUZsOt7mH9iIuGdAe3dbWd0Hw="}]}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # def encrypt_file(plaintext: bytes, key: str):
-# #     key = pad(key.encode(), AES.block_size)
-# #     plaintext = pad(plaintext, AES.block_size)
-# #     iV = get_random_bytes(AES.block_size)
-# #     cipher = AES.new(key, AES.MODE_CBC, iv=iV)
-# #     result = cipher.encrypt(plaintext)
+    #Encrypting Data with the pin
+    for k, i in the_pw.items():
+        if (k != 'id'):
+            the_pw[k] = encryption.encrypt(i, pin)
     
-# #     return base64.b64encode(iV + result).decode("utf-8")
+    #Adding encrypted password to a seperate file
+    with open('data_share.txt', 'w') as wf:
+        json.dump(the_pw, wf)
+    encryption.file_encrypter('data_share.txt', pin)
 
-# # def decrypt_file(ciphertext: str, key: str): #not done
-# #     ciphertext = base64.b64decode(ciphertext)
+####################################################################################################################################################################################
+#Have to change the id for the password imported
+def import_pw(file_name: str, key: str, pin: str):
+    data = encryption.file_decrypter('data.txt', key)
 
-# #     key = pad(key.encode(), AES.block_size)
-# #     iV = ciphertext[:AES.block_size]
-# #     ciphertext = ciphertext[AES.block_size:]
-# #     cipher = AES.new(key, AES.MODE_CBC, iV)
-# #     result = unpad(cipher.decrypt(ciphertext), AES.block_size)
-# #     return (result.decode())
+    # Decrypting encrypted data with pin
+    new_data = encryption.file_decrypter(file_name, pin)
+    for k, i in new_data.items():
+        if(k != 'id'):
+            new_data[k] = encryption.decrypt(i, pin)
+    
+    #Encrypting Data with the key
+    for k, i in new_data.items():
+        if(k != 'id'):
+            new_data[k] = encryption.encrypt(i, key)
 
-# def file_encrypter(file_name: str, key: str):
-#     lines = ''
-#     with open(file_name, 'r') as json_file:
-#         for line in json_file:
-#             line = line.encode()
-#             line = encryption.encrypt(line, key)
-#             lines += line
+    #Deriving new id
+    new_id = 0
+    for items in data['data']:
+        for key, item in items.items():
+            if (key =='id'):
+                if(item > new_id):
+                    new_id = item
+    new_id += 1
 
-#     with open(file_name, 'w') as output:
-#         for line in lines:
-#             output.write(line)
+    #appending new id and the imported password to the main database
+    new_data['id'] = new_id
+    data['data'].append(new_data)
+    with open('data.txt', 'w') as wf:
+        json.dump(data, wf)
+    encryption.file_encrypter('data.txt', pin)
+    os.remove(file_name)
+    print(data)
 
-# def file_decrypter(file_name: str, key: str):
-#     lines = ''
-#     with open(file_name, 'r') as inputy:
-#         for line1 in inputy:
-#             line1 = encryption.decrypt(line1, key)
-#             lines += (line1)
-#     return lines
-
-# file_encrypter('data.txt', 'master')
-# print(file_decrypter('data.txt', 'master'))
+##################################################################################################################################################################################
+# export_pw(3, 'data.txt', 'tempkey', 'the_pin') 
+(import_pw('data_share.txt', 'tempkey', 'the_pin')) 

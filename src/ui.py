@@ -308,7 +308,7 @@ class View:
 
             with open('data.txt', 'w') as outfile:
                 json.dump(data, outfile)
-                encryption.file_encrypter('data.txt', self.masterkey)
+            encryption.file_encrypter('data.txt', self.masterkey)
 
             self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
             self.tree.delete(rawitem)
@@ -485,7 +485,7 @@ class View:
 
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
-            encryption.file_encrypter('data.txt', self.masterkey)
+        encryption.file_encrypter('data.txt', self.masterkey)
 
     def writePassword(self, title, username, password, url, notes=""):
 
@@ -513,6 +513,6 @@ class View:
         # writes new password
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
-            encryption.file_encrypter('data.txt', self.masterkey)
+        encryption.file_encrypter('data.txt', self.masterkey)
 
         return id

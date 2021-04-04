@@ -18,10 +18,11 @@ def encrypt(plaintext, key: str) -> str:
         plaintext = pad(plaintext, AES.block_size)
 
     iV = get_random_bytes(AES.block_size)
-
     cipher = AES.new(key, AES.MODE_CBC, iv=iV)
     result = cipher.encrypt(plaintext)
-    return base64.b64encode(iV + result).decode("utf-8")
+    final = iV + result
+
+    return base64.b64encode(final).decode("utf-8")
 
 def decrypt(ciphertext: str, key: str) -> str:
     ciphertext = base64.b64decode(ciphertext)
