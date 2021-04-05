@@ -1,12 +1,16 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
+from datetime import datetime
 import json
 import encryption
 import passwordAnalysis
 import time
 import inspect
 import pyperclip
+import scribble
+import os
 
 
 class View:
@@ -46,6 +50,7 @@ class View:
         self.popup_menu.add_command(label="Delete",command=self.delete_selected)
         self.popup_menu.add_command(label="Copy Username",command=self.copy_selected_username)
         self.popup_menu.add_command(label="Copy Password",command=self.copy_selected_password)
+        self.popup_menu.add_command(label="Export Password",command=self.export_selected_password_popup)
 
         self.popup_menu2 = Menu(self.root, tearoff=0)
         self.popup_menu2.add_command(label="New Entry",command=self.insert_item_popup)
@@ -55,6 +60,7 @@ class View:
         self.filemenu.add_command(label="New Entry", command=self.insert_item_popup)
         self.filemenu.add_command(label="Generate Password", command=self.generate_password_popup)
         self.filemenu.add_command(label="Change Master Password", command=self.change_master_popup)
+        self.filemenu.add_command(label="Import Password",command=self.import_selected_password_popup)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.on_closing)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
@@ -73,7 +79,6 @@ class View:
                 self.tree.insert("",1, text=arr[i]['id'], values=(encryption.decrypt(arr[i]['title'], self.masterkey), encryption.decrypt(arr[i]['username'], self.masterkey) ,encryption.decrypt(arr[i]['url'], self.masterkey), passwordAnalysis.passwordStrength(encryption.decrypt(arr[i]['password'], self.masterkey))))
         except Exception as e:
             print(e)
-
             if self.closeFlag:
                 messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
                 self.force_close()
@@ -85,10 +90,78 @@ class View:
         self.masterkey = self.passwordText1.get("1.0", END).strip("\n")
         self.firstPopup.destroy()
 
+    def changemaster(self, event=None):
+        newpass = self.changeText3.get("1.0", END).strip("\n")
+
+        rawdata = encryption.file_decrypter("data.txt", self.masterkey)
+
+        data = rawdata["data"]
+
+        newdata = []
+
+
+        for i in range(len(data)):
+            newdata.append({"id":data[i]["id"], "title":encryption.encrypt(encryption.decrypt(data[i]["title"], self.masterkey),newpass), "username":encryption.encrypt(encryption.decrypt(data[i]["username"], self.masterkey),newpass), "password":encryption.encrypt(encryption.decrypt(data[i]["password"], self.masterkey),newpass), "url":encryption.encrypt(encryption.decrypt(data[i]["url"], self.masterkey),newpass), "notes":encryption.encrypt(encryption.decrypt(data[i]["notes"], self.masterkey),newpass)})
+
+        self.masterkey = newpass
+        rawdata["data"] = newdata
+
+
+
+        with open('data.txt', 'w') as outfile:
+            json.dump(rawdata, outfile)
+        encryption.file_encrypter('data.txt', self.masterkey)
+
+
+        self.changePopup.destroy()
+        messagebox.showinfo("Password Change", "Password changed successfully")
+
+
+    def beforechange(self):
+
+        if self.changeText1.get("1.0", END).strip("\n") != self.masterkey:
+            self.changeText1.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+            messagebox.showwarning("Incorrect Passwords", "The password you entered is incorrect.")
+            self.changePopup.focus_force()
+            return
+        else:
+            self.changeText1.config(highlightbackground = "gray", highlightcolor= "gray", highlightthickness=1)
+
+
+        if self.changeText3.get("1.0", END) != self.changeText2.get("1.0", END):
+            self.changeText3.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+            self.changeText2.config(highlightbackground = "red", highlightcolor= "red", highlightthickness=1)
+            messagebox.showwarning("Mismatched Passwords", "The entered passwords are not the same.")
+            self.changePopup.focus_force()
+            return
+        else:
+            self.changeText3.config(highlightbackground = "gray", highlightcolor= "gray", highlightthickness=1)
+            self.changeText2.config(highlightbackground = "gray", highlightcolor= "gray", highlightthickness=1)
+
+        self.changemaster()
 
 
     def change_master_popup(self):
-        pass
+        popup = Tk()
+        popup.wm_title("Change Master Password")
+
+        self.changePopup = popup
+
+        label1 = ttk.Label(popup, text="Current Password").grid(row=1, column=0, padx=10, pady=10)
+        self.changeText1 = Text(popup, height=1)
+        self.changeText1.grid(row=1, column=1, padx=10, pady=10)
+
+        label1 = ttk.Label(popup, text="New Password").grid(row=2, column=0, padx=10, pady=10)
+        self.changeText2 = Text(popup, height=1)
+        self.changeText2.grid(row=2, column=1, padx=10, pady=10)
+
+        label1 = ttk.Label(popup, text="Confirm New Password").grid(row=3, column=0, padx=10, pady=10)
+        self.changeText3 = Text(popup, height=1)
+        self.changeText3.grid(row=3, column=1, padx=10, pady=10)
+
+        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.beforechange()]).grid(row=2, column=2)
+        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=2, column=3)
+        popup.mainloop()
 
     def masterkey_popup(self):
         popup = Tk()
@@ -97,7 +170,7 @@ class View:
 
         self.firstPopup = popup;
 
-        label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your existing one").grid(row=0, column=1, padx=10, pady=10)
+        label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your existing one.\n To complete setup of your master password atleast one entry must be entered.").grid(row=0, column=1, padx=10, pady=10)
 
         label1 = ttk.Label(popup, text="Password").grid(row=1, column=0, padx=10, pady=10)
         self.passwordText1 = Text(popup, height=1)
@@ -180,6 +253,21 @@ class View:
         except:
             pass
 
+        try:
+            self.importPopup.destroy()
+        except:
+            pass
+
+        try:
+            self.exportPopup.destroy()
+        except:
+            pass
+
+        try:
+            self.changePopup.destroy()
+        except:
+            pass
+
         self.root.destroy()
 
 
@@ -197,6 +285,76 @@ class View:
     def copy_selected_username(self):
         item = self.tree.item(self.tree.focus())
         pyperclip.copy(item["values"][1])
+
+    def export_selected_password(self, extraarg=None):
+        pin = self.pinText.get("1.0", END).strip("\n")
+        item = self.tree.item(self.tree.focus())
+
+        filename = datetime.now()
+        format_string = "%y-%m-%d_%H.%M.%S"
+        filename = filename.strftime(format_string)
+        filename = filename + ".txt"
+
+        scribble.export_pw(item["text"],filename, self.masterkey, pin)
+        self.exportPopup.destroy()
+
+
+    def export_selected_password_popup(self):
+        popup = Tk()
+        popup.wm_title("Export Password")
+        popup.bind('<Return>', self.export_selected_password)
+
+        self.exportPopup = popup;
+
+        label3 = ttk.Label(popup, text="You can find exported passwords in the location this program is run in a folder called exportedpasswords.").grid(row=0, column=1, padx=10, pady=10)
+        label2 = ttk.Label(popup, text="Choose a temporary passsword/pin to give to the other user.").grid(row=1, column=1, padx=10, pady=10)
+        label1 = ttk.Label(popup, text="Password/Pin").grid(row=2, column=0, padx=10, pady=10)
+        self.pinText = Text(popup, height=1)
+        self.pinText.grid(row=2, column=1, padx=10, pady=10)
+
+        B1 = ttk.Button(popup, text="Ok", command = lambda:[self.export_selected_password()]).grid(row=3, column=2)
+        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=3, column=3)
+
+        popup.mainloop()
+
+    def browse_button(self, extraarg=None):
+        path = os.getcwd()
+        filename = filedialog.askopenfilename(initialdir = path,
+                                          title = "Select a File",
+                                          filetypes = (("Text files",
+                                                        "*.txt*"),
+                                                       ("all files",
+                                                        "*.*")))
+
+        self.filename = filename
+        self.import_selected_password()
+
+    def import_selected_password(self):
+        pin = self.importPinText.get("1.0", END).strip("\n")
+        try:
+            data = scribble.import_pw(self.filename, self.masterkey, pin)
+            self.importPopup.destroy()
+            self.tree.insert("",1, text=data['id'], values=(encryption.decrypt(data['title'], self.masterkey), encryption.decrypt(data['username'], self.masterkey) ,encryption.decrypt(data['url'], self.masterkey), passwordAnalysis.passwordStrength(encryption.decrypt(data['password'], self.masterkey))))
+        except Exception as e:
+            messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
+
+    def import_selected_password_popup(self):
+        popup = Tk()
+        popup.wm_title("Import Password")
+        popup.bind('<Return>', self.browse_button)
+
+        self.importPopup = popup;
+
+        label3 = ttk.Label(popup, text="Insert pin/password given to you.").grid(row=0, column=1, padx=10, pady=10)
+
+
+        label1 = ttk.Label(popup, text="Password/Pin").grid(row=1, column=0, padx=10, pady=10)
+        self.importPinText = Text(popup, height=1)
+        self.importPinText.grid(row=1, column=1, padx=10, pady=10)
+
+        B1 = ttk.Button(popup, text="Select File", command = lambda:[self.browse_button()]).grid(row=2, column=2)
+        B2 = ttk.Button(popup, text="Cancel", command = lambda:[popup.destroy()]).grid(row=2, column=3)
+        popup.mainloop()
 
     def insert_item_popup(self):
         """
@@ -457,14 +615,17 @@ class View:
         with open('data.txt', 'a') as json_file:
             pass
 
+#JSONDecodeError
+
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
                 data = encryption.file_decrypter('data.txt', self.masterkey)
                 return data['data']
             except Exception as e:
-                print(e)
-
+                if e.args[0] == "Padding is incorrect.":
+                    messagebox.showerror("Wrong Passwords", "The password you entered is wrong!")
+                    self.force_close()
         return []
 
     def getByID(self, id):

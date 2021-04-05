@@ -18,11 +18,10 @@ def encrypt(plaintext, key: str) -> str:
         plaintext = pad(plaintext, AES.block_size)
 
     iV = get_random_bytes(AES.block_size)
+
     cipher = AES.new(key, AES.MODE_CBC, iv=iV)
     result = cipher.encrypt(plaintext)
-    final = iV + result
-
-    return base64.b64encode(final).decode("utf-8")
+    return base64.b64encode(iV + result).decode("utf-8")
 
 def decrypt(ciphertext: str, key: str) -> str:
     ciphertext = base64.b64decode(ciphertext)
@@ -52,12 +51,15 @@ def file_decrypter(file_name: str, key: str):
         for line1 in inputy:
             line1 = decrypt(line1, key)
             lines += (line1)
-    with open('temp_' + str(file_name), 'w') as tempf:
+
+    arr = file_name.split("/")
+
+    with open('temp_' + str(arr[-1]), 'w') as tempf:
         for line in lines:
             tempf.write(line)
-    with open('temp_' + str(file_name), 'r') as tempf2:
+    with open('temp_' + str(arr[-1]), 'r') as tempf2:
         data = json.load(tempf2)
-    os.remove('temp_' + str(file_name))
+    os.remove('temp_' + str(arr[-1]))
     return data
 
 def generateSalt() -> str:
@@ -95,4 +97,3 @@ def getEntryFromInfo(info):
                 list.append(p)
 
     return list
-

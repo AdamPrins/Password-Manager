@@ -7,11 +7,11 @@ import base64
 import os
 
 # with open('data.txt', 'w') as outfile:
-#     json.dump(data, outfile) 
+#     json.dump(data, outfile)
 # encryption.file_encrypter('data.txt', 'master')
 
 def getByID(id):
-    # creates file if not exists 
+    # creates file if not exists
     with open('data.txt', 'a') as json_file:
         pass
 
@@ -27,8 +27,8 @@ def getByID(id):
             print(e)
 
 def export_pw(id: int, file_name: str, key: str, pin: str):
-    data = encryption.file_decrypter(file_name, key) 
-    the_pw = getByID(id)       
+    data = encryption.file_decrypter("data.txt", key)
+    the_pw = getByID(id)
 
     #Decrypting data with masterkey
     for k, i in the_pw.items():
@@ -41,23 +41,30 @@ def export_pw(id: int, file_name: str, key: str, pin: str):
     for k, i in the_pw.items():
         if (k != 'id'):
             the_pw[k] = encryption.encrypt(i, pin)
-    
+
+    path = os.getcwd() + "/exportedpasswords/"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
     #Adding encrypted password to a seperate file
-    with open('data_share.txt', 'w') as wf:
+    with open(path + file_name, 'a') as wf:
         json.dump(the_pw, wf)
-    encryption.file_encrypter('data_share.txt', pin)
+    encryption.file_encrypter(path + file_name, pin)
 
 ####################################################################################################################################################################################
 #Have to change the id for the password imported
 def import_pw(file_name: str, key: str, pin: str):
     data = encryption.file_decrypter('data.txt', key)
 
+    # Not sure why but this gets overwritten in the function...
+    origkey = key
+
     # Decrypting encrypted data with pin
     new_data = encryption.file_decrypter(file_name, pin)
     for k, i in new_data.items():
         if(k != 'id'):
             new_data[k] = encryption.decrypt(i, pin)
-    
+
     #Encrypting Data with the key
     for k, i in new_data.items():
         if(k != 'id'):
@@ -75,12 +82,15 @@ def import_pw(file_name: str, key: str, pin: str):
     #appending new id and the imported password to the main database
     new_data['id'] = new_id
     data['data'].append(new_data)
+
+
     with open('data.txt', 'w') as wf:
         json.dump(data, wf)
-    encryption.file_encrypter('data.txt', pin)
-    os.remove(file_name)
-    print(data)
+
+    encryption.file_encrypter('data.txt', origkey)
+    return new_data
+    #os.remove(file_name)
 
 ##################################################################################################################################################################################
-# export_pw(3, 'data.txt', 'tempkey', 'the_pin') 
-(import_pw('data_share.txt', 'tempkey', 'the_pin')) 
+# export_pw(3, 'data.txt', 'tempkey', 'the_pin')
+#(import_pw('data_share.txt', 'tempkey', 'the_pin'))
