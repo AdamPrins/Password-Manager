@@ -21,12 +21,12 @@ def generateMemorablePassword(words=4, hasCapitals=True, paddingType=list(string
 
     # Selects which word should be in fullcaps
     if hasCapitals:
-        isCapital = secrets.randbelow(length)
+        isCapital = secrets.randbelow(words)
     else:
         isCapital = -1
 
     password = ""
-    for i in range(length):
+    for i in range(words):
         word = secrets.choice(wordlist)
         if i == isCapital:
             word = word.upper()
