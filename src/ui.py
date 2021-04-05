@@ -294,7 +294,7 @@ class View:
             id = item["text"]
             with open('data.txt') as json_file:
                 try:
-                    data = json.load(json_file)
+                    data = encryption.file_decrypter('data.txt', self.masterkey)
                     arr = data['data']
                     for i in range(len(arr)):
                         if arr[i]['id'] == id:
@@ -308,6 +308,7 @@ class View:
 
             with open('data.txt', 'w') as outfile:
                 json.dump(data, outfile)
+            encryption.file_encrypter('data.txt', self.masterkey)
 
             self.tree.insert("",1, text=id, values=(title,username,url,passwordAnalysis.passwordStrength(password)))
             self.tree.delete(rawitem)
@@ -338,7 +339,9 @@ class View:
         self.generate["popup"].wm_title("Generate Password")
 
         signature = inspect.signature(passwordAnalysis.generatePassword)
-        functions = (passwordAnalysis.generatePassword, passwordAnalysis.generateMemorablePassword)
+        signatureMem = inspect.signature(passwordAnalysis.generateMemorablePassword)
+        items = list(signature.parameters.items())
+        items.insert(1, ('words', signatureMem.parameters["words"]))
 
         self.generate["password"] = Text(self.generate["popup"], height=1)
         self.generate["password"].grid(row=0, column=0, padx=10, pady=10, columnspan=2)
@@ -348,8 +351,8 @@ class View:
         pos = 0
         initialRow = 3
         value = {}
-        for k, v in signature.parameters.items():
-            if pos == 0:
+        for k, v in items:
+            if k == "length" or k == "words":
                 # Creates the length slider
                 self.generate[k] = Scale(self.generate["popup"], from_=1, to=60, orient=HORIZONTAL, label=k)
                 self.generate[k].grid(row=initialRow+pos//2, column=pos%2, padx=10, pady=10)
@@ -368,7 +371,8 @@ class View:
                     self.generate[k].state(['!selected'])
             pos = pos+1
 
-        ttk.Button(self.generate["popup"], text="Generate", command = lambda: self.generatePassword(value, self.generate["password"])).grid(row=1, column=0, columnspan=2)
+        ttk.Button(self.generate["popup"], text="Generate", command = lambda: self.generatePassword(value, self.generate["password"])).grid(row=1, column=0, columnspan=1)
+        ttk.Button(self.generate["popup"], text="Generate Memorable", command = lambda: self.generateMemPassword(value, self.generate["password"])).grid(row=1, column=1, columnspan=1)
         ttk.Button(self.generate["popup"], text="Ok", command = lambda: self.generate_password_confirm(parentWindow)).grid(row=initialRow+1+pos//2, column=0)
         ttk.Button(self.generate["popup"], text="Cancel", command = lambda:[self.generate["popup"].destroy()]).grid(row=initialRow+1+pos//2, column=1)
 
@@ -380,10 +384,31 @@ class View:
         """
 
         text.delete(1.0,"end")
+        signature = inspect.signature(passwordAnalysis.generatePassword)
         newDict = {}
-        for k, v in dict.items():
-            newDict[k] = v()
+        for k, v in signature.parameters.items():
+            print('k: '+ str(k))
+            print('v: '+ str(dict[k]()))
+            newDict[k] = dict[k]()
         password = passwordAnalysis.generatePassword(**newDict)
+        text.insert(1.0, password)
+
+    def generateMemPassword(self, dict, text):
+        """
+        Generates a memorable password using the current values in the UI
+        """
+
+        text.delete(1.0,"end")
+
+        characterPool = []
+        if dict['hasDigits']():
+            characterPool += list('1234567890')
+        if dict['hasBasicSymbols']():
+            characterPool += list("~!@#$%^&*_-+=,.?")
+        if dict['hasAdvancedSymbos']():
+            characterPool += list("<>{}[]()")
+
+        password = passwordAnalysis.generateMemorablePassword(words=dict['words'](), hasCapitals=dict['hasCapitals'], paddingType=characterPool)
         text.insert(1.0, password)
 
     def generate_password_confirm(self, parentWindow):
@@ -435,7 +460,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 return data['data']
             except Exception as e:
                 print(e)
@@ -450,7 +475,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 for i in range(len(arr)):
                     if(arr[i]['id'] == id):
@@ -462,7 +487,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 id = arr[len(arr) - 1]["id"]
                 return id
@@ -472,9 +497,9 @@ class View:
 
 
     def deletePassword(self, id):
-        with open('data.txt', 'r') as data_file:
-            data = json.load(data_file)
-
+        # with open('data.txt', 'r') as data_file:
+        #     data = json.load(data_file)
+        data = encryption.file_decrypter('data.txt', self.masterkey)
         arr = data['data']
 
         for i in range(len(arr)):
@@ -484,6 +509,7 @@ class View:
 
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
+        encryption.file_encrypter('data.txt', self.masterkey)
 
     def writePassword(self, title, username, password, url, notes=""):
 
@@ -498,7 +524,7 @@ class View:
         # gets data from file if its there
         with open('data.txt') as json_file:
             try:
-                data = json.load(json_file)
+                data = encryption.file_decrypter('data.txt', self.masterkey)
                 arr = data['data']
                 id = arr[len(arr) - 1]["id"]
                 id = id + 1
@@ -511,5 +537,6 @@ class View:
         # writes new password
         with open('data.txt', 'w') as outfile:
             json.dump(data, outfile)
+        encryption.file_encrypter('data.txt', self.masterkey)
 
         return id

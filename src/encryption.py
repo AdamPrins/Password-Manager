@@ -9,17 +9,22 @@ from Crypto.Util.Padding import pad, unpad
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def encrypt(plaintext: str, key: str) -> str:
+def encrypt(plaintext, key: str) -> str:
     key = pad(key.encode(), AES.block_size)
-    plaintext = pad(plaintext.encode(), AES.block_size)
-    iV = get_random_bytes(AES.block_size)
 
+    if(isinstance(plaintext, str)):
+        plaintext = pad(plaintext.encode(), AES.block_size)
+    else:
+        plaintext = pad(plaintext, AES.block_size)
+
+    iV = get_random_bytes(AES.block_size)
     cipher = AES.new(key, AES.MODE_CBC, iv=iV)
     result = cipher.encrypt(plaintext)
-    return base64.b64encode(iV + result).decode("utf-8")
+    final = iV + result
+
+    return base64.b64encode(final).decode("utf-8")
 
 def decrypt(ciphertext: str, key: str) -> str:
-
     ciphertext = base64.b64decode(ciphertext)
 
     key = pad(key.encode(), AES.block_size)
@@ -28,6 +33,32 @@ def decrypt(ciphertext: str, key: str) -> str:
     cipher = AES.new(key, AES.MODE_CBC, iV)
     result = unpad(cipher.decrypt(ciphertext), AES.block_size)
     return result.decode()
+
+def file_encrypter(file_name: str, key: str):
+    lines = ''
+    with open(file_name, 'r') as json_file:
+        for line in json_file:
+            line = line.encode()
+            line = encrypt(line, key)
+            lines += line
+
+    with open(file_name, 'w') as output:
+        for line in lines:
+            output.write(line)
+
+def file_decrypter(file_name: str, key: str):
+    lines = ''
+    with open(file_name, 'r') as inputy:
+        for line1 in inputy:
+            line1 = decrypt(line1, key)
+            lines += (line1)
+    with open('temp_' + str(file_name), 'w') as tempf:
+        for line in lines:
+            tempf.write(line)
+    with open('temp_' + str(file_name), 'r') as tempf2:
+        data = json.load(tempf2)
+    os.remove('temp_' + str(file_name))
+    return data
 
 def generateSalt() -> str:
     chars=[]
@@ -64,3 +95,4 @@ def getEntryFromInfo(info):
                 list.append(p)
 
     return list
+
