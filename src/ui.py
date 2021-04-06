@@ -87,7 +87,7 @@ class View:
 
 
     def setmaster(self, event=None):
-        self.masterkey = self.passwordText1.get("1.0", END).strip("\n")
+        self.masterkey = self.passwordText1.get().strip("\n")
         self.firstPopup.destroy()
 
     def changemaster(self, event=None):
@@ -173,7 +173,7 @@ class View:
         label2 = ttk.Label(popup, text="Welcome to the password manager \nIf this is your first time, set your master password otherwise enter your existing one.\n To complete setup of your master password atleast one entry must be entered.").grid(row=0, column=1, padx=10, pady=10)
 
         label1 = ttk.Label(popup, text="Password").grid(row=1, column=0, padx=10, pady=10)
-        self.passwordText1 = Text(popup, height=1)
+        self.passwordText1 = Entry(popup, show='*')
         self.passwordText1.grid(row=1, column=1, padx=10, pady=10)
 
 
