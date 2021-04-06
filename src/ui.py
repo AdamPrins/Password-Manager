@@ -483,7 +483,7 @@ class View:
 
         item2 = self.getByID(item["text"])
 
-        self.writePassword(item2['title'], item2['username'], item2['password'], item2['url'], item2['notes'])
+        self.writePassword(encryption.decrypt(item2['title'], self.masterkey), encryption.decrypt(item2['username'], self.masterkey), encryption.decrypt(item2['password'], self.masterkey), encryption.decrypt(item2['url'], self.masterkey), encryption.decrypt(item2['notes'], self.masterkey))
         self.tree.insert("",1, text=self.getLastID(), values=item["values"])
 
     def generate_password_popup(self, parentWindow=None):
