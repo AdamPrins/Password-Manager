@@ -11,7 +11,7 @@ INSTALLATION
 RUNNING
 ==========================
 - Navigate into the src folder and run:
-       WINDOWS 
+       WINDOWS
        python ./main.py
 
        LINUX/MAC
@@ -22,6 +22,5 @@ TROUBLESHOOTING
 ==========================
 If an unsolvable error occurs please email us at:
 ryana.baker@carleton.ca
-adam.prins@carleton.ca
+evening.starlight@carleton.ca
 mitansh.desai@carleton.ca
-
